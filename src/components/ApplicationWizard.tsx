@@ -244,6 +244,7 @@ export const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
       });
 
       setSubmittedApp(res.application);
+      window.dispatchEvent(new CustomEvent('application_submitted', { detail: res.application }));
       setTimeLeft(30);
       setWizardStage('processing');
     } catch (err: any) {

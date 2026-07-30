@@ -388,93 +388,53 @@ app.post('/api/applications/step1', (req: Request, res: Response) => {
   const safeOtherDoc = (otherDocUrl && otherDocUrl.trim()) ? otherDocUrl : 'Not Uploaded';
   const safePaymentScreenshot = (paymentScreenshotUrl && paymentScreenshotUrl.trim()) ? paymentScreenshotUrl : 'Not Uploaded';
 
-  // Check if candidate already has an active application under this CNIC for the same position
-  const existing = cleanCNICVal ? db.applications.find(
-    a => cleanCNIC(a.cnic) === cleanCNICVal && a.jobPosition === (jobPosition || 'General Application')
-  ) : null;
+  // Create new application record with guaranteed unique Tracking ID & Reference No for every submission
+  let referenceNo = '';
+  let isUnique = false;
+  while (!isUnique) {
+    const randomDigits = Math.floor(100000 + Math.random() * 900000);
+    referenceNo = `JHO-${new Date().getFullYear()}-${randomDigits}`;
+    isUnique = !db.applications.some(a => a.referenceNo === referenceNo);
+  }
 
   const now = new Date().toISOString();
-  let applicationRecord: Application;
-
-  if (existing) {
-    // Update existing application
-    existing.fullName = safeFullName;
-    existing.fatherName = safeFatherName;
-    existing.dob = dob ? dob.trim() : existing.dob;
-    existing.gender = gender ? gender.trim() : (existing.gender || 'Male');
-    existing.email = safeEmail;
-    existing.mobile = safeMobile;
-    existing.whatsapp = safeWhatsapp;
-    existing.qualification = safeQual;
-    existing.experience = experience ? experience.trim() : (existing.experience || 'Fresh');
-    existing.skills = skills ? skills.trim() : (existing.skills || '');
-    existing.address = safeAddress;
-    existing.city = safeCity;
-    existing.postalCode = postalCode ? postalCode.trim() : (existing.postalCode || '');
-    existing.jobPosition = jobPosition || existing.jobPosition || 'General Application';
-    existing.jobCategory = jobCategory || existing.jobCategory || 'General';
-    existing.jobId = jobId || existing.jobId || null;
-    existing.cnicFrontUrl = safeCnicFront;
-    existing.cnicBackUrl = safeCnicBack;
-    existing.passportPhotoUrl = safePassportPhoto;
-    existing.educationCertUrl = safeEducationCert;
-    existing.experienceCertUrl = safeExperienceCert;
-    existing.resumeUrl = safeResume;
-    existing.otherDocUrl = safeOtherDoc;
-    if (paymentMethod) existing.paymentMethod = paymentMethod;
-    if (safePaymentScreenshot !== 'Not Uploaded') existing.paymentScreenshotUrl = safePaymentScreenshot;
-    if (paymentTxnId) existing.paymentTxnId = paymentTxnId;
-    existing.updatedAt = now;
-    existing.status = 'Submitted Successfully';
-    applicationRecord = existing;
-  } else {
-    // Create new application with guaranteed unique Tracking ID
-    let referenceNo = '';
-    let isUnique = false;
-    while (!isUnique) {
-      const randomDigits = Math.floor(100000 + Math.random() * 900000);
-      referenceNo = `JHO-${new Date().getFullYear()}-${randomDigits}`;
-      isUnique = !db.applications.some(a => a.referenceNo === referenceNo);
-    }
-
-    applicationRecord = {
-      id: `app-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`,
-      referenceNo,
-      fullName: safeFullName,
-      fatherName: safeFatherName,
-      cnic: formattedCNIC,
-      dob: dob ? dob.trim() : '',
-      gender: gender ? gender.trim() : 'Male',
-      email: safeEmail,
-      mobile: safeMobile,
-      whatsapp: safeWhatsapp,
-      qualification: safeQual,
-      experience: experience ? experience.trim() : 'Fresh',
-      skills: skills ? skills.trim() : '',
-      address: safeAddress,
-      city: safeCity,
-      postalCode: postalCode ? postalCode.trim() : '',
-      jobPosition: jobPosition || 'General Application',
-      jobCategory: jobCategory || 'General',
-      jobId: jobId || null,
-      cnicFrontUrl: safeCnicFront,
-      cnicBackUrl: safeCnicBack,
-      passportPhotoUrl: safePassportPhoto,
-      educationCertUrl: safeEducationCert,
-      experienceCertUrl: safeExperienceCert,
-      resumeUrl: safeResume,
-      otherDocUrl: safeOtherDoc,
-      processingCompleted: true,
-      paymentScreenshotUrl: safePaymentScreenshot,
-      paymentMethod: paymentMethod || 'JazzCash',
-      paymentTxnId: paymentTxnId || null,
-      status: 'Submitted Successfully',
-      rejectionReason: null,
-      createdAt: now,
-      updatedAt: now
-    };
-    db.applications.push(applicationRecord);
-  }
+  const applicationRecord: Application = {
+    id: `app-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`,
+    referenceNo,
+    fullName: safeFullName,
+    fatherName: safeFatherName,
+    cnic: formattedCNIC,
+    dob: dob ? dob.trim() : '',
+    gender: gender ? gender.trim() : 'Male',
+    email: safeEmail,
+    mobile: safeMobile,
+    whatsapp: safeWhatsapp,
+    qualification: safeQual,
+    experience: experience ? experience.trim() : 'Fresh',
+    skills: skills ? skills.trim() : '',
+    address: safeAddress,
+    city: safeCity,
+    postalCode: postalCode ? postalCode.trim() : '',
+    jobPosition: jobPosition || 'General Application',
+    jobCategory: jobCategory || 'General',
+    jobId: jobId || null,
+    cnicFrontUrl: safeCnicFront,
+    cnicBackUrl: safeCnicBack,
+    passportPhotoUrl: safePassportPhoto,
+    educationCertUrl: safeEducationCert,
+    experienceCertUrl: safeExperienceCert,
+    resumeUrl: safeResume,
+    otherDocUrl: safeOtherDoc,
+    processingCompleted: true,
+    paymentScreenshotUrl: safePaymentScreenshot,
+    paymentMethod: paymentMethod || 'JazzCash',
+    paymentTxnId: paymentTxnId || null,
+    status: 'Submitted Successfully',
+    rejectionReason: null,
+    createdAt: now,
+    updatedAt: now
+  };
+  db.applications.push(applicationRecord);
 
   saveDB(db);
   res.json({

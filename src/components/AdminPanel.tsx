@@ -351,12 +351,22 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, onRefre
       loadSettings();
       loadAdminJobs();
 
+      const handleAppSubmitted = () => {
+        loadStats();
+        loadApplications();
+      };
+
+      window.addEventListener('application_submitted', handleAppSubmitted);
+
       const interval = setInterval(() => {
         loadStats();
         loadApplications();
-      }, 5000);
+      }, 3000);
 
-      return () => clearInterval(interval);
+      return () => {
+        clearInterval(interval);
+        window.removeEventListener('application_submitted', handleAppSubmitted);
+      };
     }
   }, [token, selectedStatusFilter]);
 
