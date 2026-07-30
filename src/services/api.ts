@@ -450,10 +450,10 @@ export async function fetchAdminStats(token: string): Promise<ApplicationStats> 
     totalUsers: 1,
     totalJobs: DEFAULT_JOBS.length,
     totalApplications: localApps.length,
-    pendingPayments: localApps.filter(a => a.status === 'Payment Verification Pending' || a.status === 'Payment Pending').length,
-    approvedPayments: localApps.filter(a => a.status === 'Submitted Successfully').length,
-    rejectedPayments: localApps.filter(a => a.status === 'Payment Rejected').length,
-    submittedSuccessfully: localApps.filter(a => a.status === 'Submitted Successfully').length
+    pendingPayments: localApps.filter(a => a.status === 'Payment Verification Pending' || a.status === 'Payment Pending' || (a as any).paymentStatus === 'pending').length,
+    approvedPayments: localApps.filter(a => a.status === 'Payment Approved' || a.status === 'Submitted Successfully' || a.status === 'Auto-Approved / Preliminary Approval' || (a as any).paymentStatus === 'approved').length,
+    rejectedPayments: localApps.filter(a => a.status === 'Payment Rejected' || a.status === 'Rejected' || (a as any).paymentStatus === 'rejected').length,
+    submittedSuccessfully: localApps.filter(a => a.status === 'Submitted Successfully' || a.status === 'Auto-Approved / Preliminary Approval').length
   };
 }
 
@@ -479,7 +479,29 @@ export async function fetchAdminApplications(
 
   let localApps = getLocalApplications();
   if (status && status !== 'all') {
-    localApps = localApps.filter(a => a.status === status);
+    const sLower = status.toLowerCase();
+    if (sLower === 'pending') {
+      localApps = localApps.filter(a =>
+        a.status === 'Payment Verification Pending' ||
+        a.status === 'Payment Pending' ||
+        (a as any).paymentStatus === 'pending'
+      );
+    } else if (sLower === 'approved') {
+      localApps = localApps.filter(a =>
+        a.status === 'Payment Approved' ||
+        a.status === 'Submitted Successfully' ||
+        a.status === 'Auto-Approved / Preliminary Approval' ||
+        (a as any).paymentStatus === 'approved'
+      );
+    } else if (sLower === 'rejected') {
+      localApps = localApps.filter(a =>
+        a.status === 'Payment Rejected' ||
+        a.status === 'Rejected' ||
+        (a as any).paymentStatus === 'rejected'
+      );
+    } else {
+      localApps = localApps.filter(a => a.status === status);
+    }
   }
   if (search && search.trim()) {
     const s = search.toLowerCase().trim();
@@ -490,6 +512,7 @@ export async function fetchAdminApplications(
       (a.jobPosition && a.jobPosition.toLowerCase().includes(s))
     );
   }
+  localApps.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   return localApps;
 }
 

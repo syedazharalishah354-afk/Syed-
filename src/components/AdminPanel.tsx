@@ -1024,40 +1024,43 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, onRefre
                             applications.map((app) => (
                               <tr key={app.id} className="hover:bg-slate-50/80 transition-colors">
                                 <td className="p-3 font-mono">
-                                  <div className="font-bold text-blue-900">{app.rollNumber || app.id.slice(0, 8)}</div>
+                                  <div className="font-bold text-blue-900">{app.referenceNo || app.rollNumber || app.id.slice(0, 8)}</div>
                                   <div className="text-[10px] text-slate-400">
                                     {new Date(app.createdAt).toLocaleDateString()}
                                   </div>
                                 </td>
                                 <td className="p-3">
-                                  <div className="font-bold text-slate-900">{app.candidateName}</div>
+                                  <div className="font-bold text-slate-900">{app.fullName || app.candidateName || 'Applicant'}</div>
                                   <div className="text-[10px] text-slate-500">CNIC: {app.cnic}</div>
-                                  <div className="text-[10px] text-slate-500">Mobile: {app.mobileNumber}</div>
+                                  <div className="text-[10px] text-slate-500">Mobile: {app.mobile || app.mobileNumber || 'N/A'}</div>
                                 </td>
                                 <td className="p-3 font-medium text-slate-800">
-                                  {app.jobTitle}
+                                  {app.jobPosition || app.jobTitle || 'General Application'}
                                 </td>
                                 <td className="p-3">
-                                  <div className="font-bold capitalize text-slate-800">{app.paymentMethod}</div>
-                                  <div className="text-[10px] text-slate-500">TRX: {app.transactionId}</div>
+                                  <div className="font-bold capitalize text-slate-800">{app.paymentMethod || 'JazzCash'}</div>
+                                  <div className="text-[10px] text-slate-500">TRX: {app.paymentTxnId || app.transactionId || 'N/A'}</div>
                                 </td>
                                 <td className="p-3">
-                                  {app.paymentStatus === 'approved' && (
+                                  {(app.status === 'Payment Approved' || app.status === 'Submitted Successfully' || app.status === 'Auto-Approved / Preliminary Approval' || app.paymentStatus === 'approved') ? (
                                     <span className="px-2.5 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-bold text-[10px] inline-flex items-center gap-1">
                                       <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                                      Approved
+                                      {app.status || 'Approved'}
                                     </span>
-                                  )}
-                                  {app.paymentStatus === 'pending' && (
+                                  ) : (app.status === 'Payment Verification Pending' || app.status === 'Payment Pending' || app.paymentStatus === 'pending') ? (
                                     <span className="px-2.5 py-0.5 rounded-md bg-amber-100 text-amber-800 font-bold text-[10px] inline-flex items-center gap-1">
                                       <Clock className="w-3 h-3 text-amber-600" />
                                       Pending Verification
                                     </span>
-                                  )}
-                                  {app.paymentStatus === 'rejected' && (
+                                  ) : (app.status === 'Payment Rejected' || app.status === 'Rejected' || app.paymentStatus === 'rejected') ? (
                                     <span className="px-2.5 py-0.5 rounded-md bg-rose-100 text-rose-800 font-bold text-[10px] inline-flex items-center gap-1">
                                       <XCircle className="w-3 h-3 text-rose-600" />
                                       Rejected
+                                    </span>
+                                  ) : (
+                                    <span className="px-2.5 py-0.5 rounded-md bg-blue-100 text-blue-800 font-bold text-[10px] inline-flex items-center gap-1">
+                                      <CheckCircle2 className="w-3 h-3 text-blue-600" />
+                                      {app.status || 'Submitted'}
                                     </span>
                                   )}
                                 </td>
