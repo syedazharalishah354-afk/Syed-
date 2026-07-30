@@ -218,6 +218,7 @@ export default function App() {
         onLogoutAdmin={handleAdminLogout}
         onSelectCampaign={handleSelectCampaign}
         activeCampaignSlug={activeCampaignSlug}
+        config={config}
       />
 
       {/* Main View Mode */}
@@ -329,6 +330,7 @@ export default function App() {
         onOpenTrack={() => setIsTrackOpen(true)}
         onNavigateSection={handleNavigateSection}
         onOpenAdminLogin={() => setIsAdminLoginOpen(true)}
+        config={config}
       />
 
       {/* Admin Login Modal with Lock Icon */}

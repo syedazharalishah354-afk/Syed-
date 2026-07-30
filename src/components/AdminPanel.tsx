@@ -15,6 +15,7 @@ import {
   createAdminJob,
   updateAdminJob,
   deleteAdminJob,
+  deleteAdminApplication,
   togglePublishAdminJob,
   bulkPublishAdminJobs,
   bulkUnpublishAdminJobs,
@@ -267,6 +268,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, onRefre
 
   // Deletion Modals
   const [deletingJob, setDeletingJob] = useState<JobPosition | null>(null);
+  const [deletingApp, setDeletingApp] = useState<Application | null>(null);
+  const [deletingAppProcess, setDeletingAppProcess] = useState(false);
   const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
   const [deletingProcess, setDeletingProcess] = useState(false);
 
@@ -279,12 +282,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, onRefre
   const [verifying, setVerifying] = useState(false);
   const [zoomImage, setZoomImage] = useState<string | null>(null);
 
-  // Settings Form State
+  // Settings Form State & Sub-Tab
   const [settingsForm, setSettingsForm] = useState<SystemSettings | null>(null);
+  const [settingsSubTab, setSettingsSubTab] = useState<'payment' | 'contact' | 'website'>('payment');
   const [savingSettings, setSavingSettings] = useState(false);
   const [settingsSuccess, setSettingsSuccess] = useState<string | null>(null);
 
-  // Password Form State
+  // Password & Security Form State
+  const [newAdminUser, setNewAdminUser] = useState('');
   const [currentPass, setCurrentPass] = useState('');
   const [newPass, setNewPass] = useState('');
   const [passSuccess, setPassSuccess] = useState<string | null>(null);
@@ -564,6 +569,22 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, onRefre
     }
   };
 
+  const handleConfirmDeleteApplication = async () => {
+    if (!token || !deletingApp) return;
+    setDeletingAppProcess(true);
+    try {
+      await deleteAdminApplication(token, deletingApp.id);
+      setDeletingApp(null);
+      if (selectedApp?.id === deletingApp.id) setSelectedApp(null);
+      await loadStats();
+      await loadApplications();
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete application record.');
+    } finally {
+      setDeletingAppProcess(false);
+    }
+  };
+
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token || !settingsForm) return;
@@ -581,7 +602,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, onRefre
 
     try {
       await updateSystemSettings(token, settingsForm);
-      setSettingsSuccess('Settings & official WhatsApp support number updated successfully.');
+      setSettingsSuccess('System settings & configuration updated successfully across live website.');
       if (onRefreshConfig) onRefreshConfig();
     } catch (err: any) {
       alert(err.message || 'Failed to save settings');
@@ -599,12 +620,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, onRefre
     setPassSuccess(null);
 
     try {
-      await changeAdminPassword(token, currentPass, newPass);
-      setPassSuccess('Admin password updated successfully.');
+      const res = await changeAdminPassword(token, currentPass, newPass || undefined, newAdminUser || undefined);
+      setPassSuccess('Admin security profile updated successfully.');
+      if (res.username) setAdminUsername(res.username);
       setCurrentPass('');
       setNewPass('');
+      setNewAdminUser('');
     } catch (err: any) {
-      setPassError(err.message || 'Password update failed.');
+      setPassError(err.message || 'Security profile update failed.');
     } finally {
       setChangingPass(false);
     }
@@ -1064,13 +1087,20 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, onRefre
                                     </span>
                                   )}
                                 </td>
-                                <td className="p-3 text-right">
+                                <td className="p-3 text-right space-x-1 whitespace-nowrap">
                                   <button
                                     onClick={() => setSelectedApp(app)}
-                                    className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-900 font-bold text-xs rounded-lg transition-colors inline-flex items-center gap-1 cursor-pointer"
+                                    className="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-900 font-bold text-xs rounded-lg transition-colors inline-flex items-center gap-1 cursor-pointer"
                                   >
                                     <Eye className="w-3.5 h-3.5 text-blue-600" />
                                     <span>Review</span>
+                                  </button>
+                                  <button
+                                    onClick={() => setDeletingApp(app)}
+                                    className="px-2 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs rounded-lg transition-colors inline-flex items-center gap-1 cursor-pointer"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                                    <span>Delete</span>
                                   </button>
                                 </td>
                               </tr>
@@ -1341,18 +1371,29 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, onRefre
                                   </td>
                                   <td className="p-3 text-right space-x-1 whitespace-nowrap">
                                     <button
+                                      onClick={() => {
+                                        setSearchQuery(job.title);
+                                        setSelectedStatusFilter('all');
+                                        setActiveTab('applications');
+                                      }}
+                                      className="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-900 font-bold rounded text-[11px] inline-flex items-center gap-1 cursor-pointer"
+                                    >
+                                      <FileText className="w-3 h-3 text-indigo-600" />
+                                      <span>Apps</span>
+                                    </button>
+                                    <button
                                       onClick={() => handleOpenEditJob(job)}
                                       className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded text-[11px] inline-flex items-center gap-1 cursor-pointer"
                                     >
                                       <Edit3 className="w-3 h-3 text-blue-600" />
-                                      Edit
+                                      <span>Edit</span>
                                     </button>
                                     <button
                                       onClick={() => setDeletingJob(job)}
                                       className="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold rounded text-[11px] inline-flex items-center gap-1 cursor-pointer"
                                     >
                                       <Trash2 className="w-3 h-3 text-rose-600" />
-                                      Delete
+                                      <span>Delete</span>
                                     </button>
                                   </td>
                                 </tr>
@@ -1599,8 +1640,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, onRefre
                   <form onSubmit={handleChangePass} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs space-y-4 text-xs">
                     <h4 className="font-extrabold text-slate-900 text-sm flex items-center gap-2">
                       <Key className="w-4 h-4 text-blue-600" />
-                      Change Admin Credentials
+                      Change Admin Credentials &amp; Username
                     </h4>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Admin Username</label>
+                      <input
+                        type="text"
+                        value={newAdminUser}
+                        onChange={(e) => setNewAdminUser(e.target.value)}
+                        placeholder={`Current: ${adminUsername} (leave blank to keep current)`}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-600 font-semibold"
+                      />
+                    </div>
                     
                     <div>
                       <label className="block font-bold text-slate-700 mb-1">Current Password</label>
@@ -1618,11 +1670,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, onRefre
                       <label className="block font-bold text-slate-700 mb-1">New Admin Password</label>
                       <input
                         type="password"
-                        required
-                        min={6}
                         value={newPass}
                         onChange={(e) => setNewPass(e.target.value)}
-                        placeholder="Enter new strong password"
+                        placeholder="Enter new strong password (optional)"
                         className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-600"
                       />
                     </div>
@@ -1633,7 +1683,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, onRefre
                       className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md transition-colors flex items-center justify-center gap-2 cursor-pointer"
                     >
                       {changingPass ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
-                      <span>Update Password</span>
+                      <span>Update Admin Security Credentials</span>
                     </button>
                   </form>
 
@@ -1916,6 +1966,52 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isOpen, onClose, onRefre
                 >
                   {deletingProcess ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
                   <span>Confirm Delete</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ================= APPLICATION DELETION CONFIRMATION MODAL ================= */}
+        {deletingApp && (
+          <div className="fixed inset-0 z-70 flex items-center justify-center bg-slate-950/80 backdrop-blur-xs p-4">
+            <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-rose-200 p-6 space-y-4">
+              <div className="flex items-center gap-3 text-rose-600">
+                <div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center shrink-0">
+                  <AlertTriangle className="w-6 h-6 text-rose-600" />
+                </div>
+                <div>
+                  <h4 className="font-extrabold text-slate-900 text-base">Delete Candidate Application?</h4>
+                  <p className="text-xs text-slate-500">This will remove the candidate record permanently.</p>
+                </div>
+              </div>
+
+              <div className="bg-rose-50/70 p-3.5 rounded-xl border border-rose-200 text-xs space-y-1">
+                <div className="font-extrabold text-slate-900">{deletingApp.fullName || deletingApp.candidateName || 'Candidate'}</div>
+                <div className="text-slate-600 font-medium">CNIC: {deletingApp.cnic} | Roll: {deletingApp.referenceNo || deletingApp.rollNumber || deletingApp.id.slice(0, 8)}</div>
+                <div className="text-[10px] font-bold text-indigo-900 mt-1">Applied For: {deletingApp.jobPosition || deletingApp.jobTitle}</div>
+              </div>
+
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Are you sure you want to permanently delete this application record from the admin database?
+              </p>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setDeletingApp(null)}
+                  className="px-4 py-2 text-slate-600 font-semibold text-xs hover:text-slate-900 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDeleteApplication}
+                  disabled={deletingAppProcess}
+                  className="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer flex items-center gap-1.5"
+                >
+                  {deletingAppProcess ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                  <span>Delete Record</span>
                 </button>
               </div>
             </div>

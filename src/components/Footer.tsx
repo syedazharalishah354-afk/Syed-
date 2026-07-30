@@ -1,19 +1,29 @@
 import React from 'react';
 import { Briefcase, ShieldCheck, Mail, Phone, MapPin, Search, UserCheck, Lock } from 'lucide-react';
+import { SystemSettings } from '../types';
 
 interface FooterProps {
   onOpenApply: () => void;
   onOpenTrack: () => void;
   onNavigateSection: (id: string) => void;
   onOpenAdminLogin?: () => void;
+  config?: SystemSettings;
 }
 
 export const Footer: React.FC<FooterProps> = ({
   onOpenApply,
   onOpenTrack,
   onNavigateSection,
-  onOpenAdminLogin
+  onOpenAdminLogin,
+  config
 }) => {
+  const siteName = config?.websiteInfo?.websiteName || 'JobsHub';
+  const description = config?.websiteInfo?.websiteDescription || 'JobsHubOfficial is a career recruitment portal designed for candidates aged 18 to 35. Offering direct CNIC verified job application workflows and transparent fee payment verification.';
+  const footerText = config?.websiteInfo?.footerInfo || '© 2026 JobsHubOfficial. All rights reserved.';
+  const phone = config?.contactInfo?.phoneNumber || config?.whatsappNumber || '+92 51 8899770';
+  const email = config?.contactInfo?.emailAddress || 'support@jobshubofficial.org';
+  const address = config?.contactInfo?.address || 'Recruitment Directorate, Sector G-8/1, Islamabad, Pakistan';
+
   return (
     <footer id="support" className="bg-slate-950 text-slate-300 pt-12 pb-8 border-t border-slate-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
@@ -23,16 +33,20 @@ export const Footer: React.FC<FooterProps> = ({
           {/* Brand Info */}
           <div className="space-y-4">
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold">
-                <Briefcase className="w-5 h-5" />
-              </div>
+              {config?.websiteInfo?.logoUrl ? (
+                <img src={config.websiteInfo.logoUrl} alt={siteName} className="w-9 h-9 rounded-xl object-cover" />
+              ) : (
+                <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold">
+                  <Briefcase className="w-5 h-5" />
+                </div>
+              )}
               <span className="text-xl font-extrabold text-white tracking-tight">
-                JobsHub<span className="text-blue-500">Official</span>
+                {siteName}<span className="text-blue-500">Official</span>
               </span>
             </div>
             
             <p className="text-xs text-slate-400 leading-relaxed font-normal">
-              JobsHubOfficial is a career recruitment portal designed for candidates aged 18 to 35. Offering direct CNIC verified job application workflows and transparent fee payment verification.
+              {description}
             </p>
 
             <div className="flex items-center gap-2 text-xs text-emerald-400 font-medium">
@@ -101,15 +115,15 @@ export const Footer: React.FC<FooterProps> = ({
             <ul className="space-y-2 text-xs text-slate-400">
               <li className="flex items-center gap-2">
                 <Phone className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-                <span>Helpline: +92 51 8899770</span>
+                <span>Helpline: {phone}</span>
               </li>
               <li className="flex items-center gap-2">
                 <Mail className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-                <span>support@jobshubofficial.org</span>
+                <span>{email}</span>
               </li>
               <li className="flex items-start gap-2">
                 <MapPin className="w-3.5 h-3.5 text-blue-400 shrink-0 mt-0.5" />
-                <span>Recruitment Directorate, Sector G-8/1, Islamabad, Pakistan</span>
+                <span>{address}</span>
               </li>
             </ul>
           </div>
@@ -118,7 +132,7 @@ export const Footer: React.FC<FooterProps> = ({
 
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-slate-900 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-          <p>© 2026 JobsHubOfficial. All rights reserved.</p>
+          <p>{footerText}</p>
           
           {onOpenAdminLogin && (
             <button

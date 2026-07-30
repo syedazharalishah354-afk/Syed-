@@ -560,11 +560,12 @@ app.get('/api/admin/me', authMiddleware, (req: AuthenticatedRequest, res: Respon
   res.json({ username: req.adminUser?.username });
 });
 
-// Change Admin Password
+// Change Admin Password & Security Profile
 app.post('/api/admin/change-password', authMiddleware, (req: AuthenticatedRequest, res: Response) => {
-  const { currentPassword, newPassword } = req.body;
-  if (!currentPassword || !newPassword || newPassword.length < 6) {
-    return res.status(400).json({ error: 'New password must be at least 6 characters long.' });
+  const { currentPassword, newPassword, newUsername } = req.body;
+
+  if (!currentPassword) {
+    return res.status(400).json({ error: 'Current password is required to verify identity.' });
   }
 
   const db = getDB();
@@ -573,11 +574,23 @@ app.post('/api/admin/change-password', authMiddleware, (req: AuthenticatedReques
     return res.status(400).json({ error: 'Current password is incorrect.' });
   }
 
-  const salt = bcrypt.genSaltSync(10);
-  db.admin.passwordHash = bcrypt.hashSync(newPassword, salt);
-  saveDB(db);
+  if (newPassword) {
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'New password must be at least 6 characters long.' });
+    }
+    const salt = bcrypt.genSaltSync(10);
+    db.admin.passwordHash = bcrypt.hashSync(newPassword, salt);
+  }
 
-  res.json({ message: 'Admin password updated successfully.' });
+  if (newUsername && newUsername.trim()) {
+    db.admin.username = newUsername.trim();
+  }
+
+  saveDB(db);
+  res.json({
+    message: 'Admin security profile updated successfully.',
+    username: db.admin.username
+  });
 });
 
 // Admin Dashboard Stats
@@ -738,6 +751,21 @@ app.post('/api/admin/applications/:id/verify', authMiddleware, (req: Request, re
   });
 });
 
+// Admin Application Delete Action
+app.delete('/api/admin/applications/:id', authMiddleware, (req: Request, res: Response) => {
+  const { id } = req.params;
+  const db = getDB();
+  const appIndex = db.applications.findIndex(a => a.id === id);
+  if (appIndex === -1) {
+    return res.status(404).json({ error: 'Application record not found.' });
+  }
+
+  db.applications.splice(appIndex, 1);
+  saveDB(db);
+
+  res.json({ message: 'Application record deleted successfully.' });
+});
+
 // Admin Application Status Update Action
 app.post('/api/admin/applications/:id/status', authMiddleware, (req: Request, res: Response) => {
   const { id } = req.params;
@@ -774,29 +802,74 @@ app.get('/api/admin/settings', authMiddleware, (_req: Request, res: Response) =>
 });
 
 app.put('/api/admin/settings', authMiddleware, (req: Request, res: Response) => {
-  const { applicationFee, whatsappNumber, jazzcash, easypaisa, interviewPolicy } = req.body;
+  const {
+    applicationFee,
+    whatsappNumber,
+    phoneNumber,
+    emailAddress,
+    jazzcash,
+    easypaisa,
+    contactInfo,
+    websiteInfo,
+    interviewPolicy
+  } = req.body;
 
   const db = getDB();
-  if (typeof applicationFee === 'number' && applicationFee > 0) {
+  if (typeof applicationFee === 'number' && applicationFee >= 0) {
     db.settings.applicationFee = applicationFee;
   }
   if (typeof whatsappNumber === 'string') {
     db.settings.whatsappNumber = whatsappNumber;
   }
-  if (jazzcash) {
+  if (typeof phoneNumber === 'string') {
+    db.settings.phoneNumber = phoneNumber;
+  }
+  if (typeof emailAddress === 'string') {
+    db.settings.emailAddress = emailAddress;
+  }
+
+  if (jazzcash && typeof jazzcash === 'object') {
     db.settings.jazzcash = {
-      accountTitle: jazzcash.accountTitle || db.settings.jazzcash.accountTitle,
-      accountNumber: jazzcash.accountNumber || db.settings.jazzcash.accountNumber,
-      instructions: jazzcash.instructions || db.settings.jazzcash.instructions
+      accountTitle: jazzcash.accountTitle || db.settings.jazzcash?.accountTitle || 'JobsHub Official Portal',
+      accountNumber: jazzcash.accountNumber || db.settings.jazzcash?.accountNumber || '0301-8899771',
+      instructions: jazzcash.instructions || db.settings.jazzcash?.instructions || '',
+      enabled: typeof jazzcash.enabled === 'boolean' ? jazzcash.enabled : true
     };
   }
-  if (easypaisa) {
+
+  if (easypaisa && typeof easypaisa === 'object') {
     db.settings.easypaisa = {
-      accountTitle: easypaisa.accountTitle || db.settings.easypaisa.accountTitle,
-      accountNumber: easypaisa.accountNumber || db.settings.easypaisa.accountNumber,
-      instructions: easypaisa.instructions || db.settings.easypaisa.instructions
+      accountTitle: easypaisa.accountTitle || db.settings.easypaisa?.accountTitle || 'JobsHub Official Portal',
+      accountNumber: easypaisa.accountNumber || db.settings.easypaisa?.accountNumber || '0345-8899772',
+      instructions: easypaisa.instructions || db.settings.easypaisa?.instructions || '',
+      enabled: typeof easypaisa.enabled === 'boolean' ? easypaisa.enabled : true
     };
   }
+
+  if (contactInfo && typeof contactInfo === 'object') {
+    db.settings.contactInfo = {
+      whatsappNumber: contactInfo.whatsappNumber || whatsappNumber || db.settings.contactInfo?.whatsappNumber || '0301-8899771',
+      phoneNumber: contactInfo.phoneNumber || phoneNumber || db.settings.contactInfo?.phoneNumber || '0301-8899771',
+      emailAddress: contactInfo.emailAddress || emailAddress || db.settings.contactInfo?.emailAddress || 'support@jobshub.official.pk',
+      address: contactInfo.address || db.settings.contactInfo?.address || 'JobsHub Official Head Office, Blue Area, Islamabad, Pakistan',
+      facebook: contactInfo.facebook ?? db.settings.contactInfo?.facebook ?? '',
+      twitter: contactInfo.twitter ?? db.settings.contactInfo?.twitter ?? '',
+      instagram: contactInfo.instagram ?? db.settings.contactInfo?.instagram ?? '',
+      linkedin: contactInfo.linkedin ?? db.settings.contactInfo?.linkedin ?? '',
+      youtube: contactInfo.youtube ?? db.settings.contactInfo?.youtube ?? ''
+    };
+  }
+
+  if (websiteInfo && typeof websiteInfo === 'object') {
+    db.settings.websiteInfo = {
+      websiteName: websiteInfo.websiteName || db.settings.websiteInfo?.websiteName || 'JobsHub Official',
+      logoUrl: websiteInfo.logoUrl ?? db.settings.websiteInfo?.logoUrl ?? '',
+      websiteDescription: websiteInfo.websiteDescription || db.settings.websiteInfo?.websiteDescription || 'Official Job Vacancies & Online Registration Portal of Pakistan',
+      announcement: websiteInfo.announcement ?? db.settings.websiteInfo?.announcement ?? '📢 Admissions & Job Applications Open for 2026. Apply Online before deadline!',
+      footerInfo: websiteInfo.footerInfo ?? db.settings.websiteInfo?.footerInfo ?? '© 2026 JobsHub Official Services Pakistan. All rights reserved. Government & Private Vacancies Portal.'
+    };
+  }
+
   if (typeof interviewPolicy === 'string') {
     db.settings.interviewPolicy = interviewPolicy;
   }

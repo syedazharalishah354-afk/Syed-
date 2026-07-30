@@ -506,6 +506,28 @@ export async function updateApplicationStatus(
   throw new Error('Application record not found');
 }
 
+export async function deleteAdminApplication(
+  token: string,
+  id: string
+): Promise<{ message: string }> {
+  try {
+    const res = await fetch(`/api/admin/applications/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const data = await res.json();
+    if (res.ok) return data;
+    throw new Error(data.error || 'Failed to delete application record');
+  } catch (err: any) {
+    if (err.message && !err.message.includes('Unexpected')) throw err;
+    
+    // Fallback for client mode
+    const localApps = getLocalApplications().filter(a => a.id !== id);
+    localStorage.setItem('jobshub_local_applications', JSON.stringify(localApps));
+    return { message: 'Application record deleted successfully' };
+  }
+}
+
 export async function updateSystemSettings(
   token: string,
   settings: Partial<SystemSettings>
@@ -526,18 +548,20 @@ export async function updateSystemSettings(
 export async function changeAdminPassword(
   token: string,
   currentPassword: string,
-  newPassword: string
-): Promise<void> {
+  newPassword?: string,
+  newUsername?: string
+): Promise<{ message: string; username?: string }> {
   const res = await fetch('/api/admin/change-password', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`
     },
-    body: JSON.stringify({ currentPassword, newPassword })
+    body: JSON.stringify({ currentPassword, newPassword, newUsername })
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Failed to update password');
+  if (!res.ok) throw new Error(data.error || 'Failed to update admin profile');
+  return data;
 }
 
 export async function fetchAdminJobs(token: string): Promise<JobPosition[]> {

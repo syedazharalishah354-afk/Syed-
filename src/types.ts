@@ -74,13 +74,38 @@ export interface PaymentMethodConfig {
   accountTitle: string;
   accountNumber: string;
   instructions: string;
+  enabled?: boolean;
+}
+
+export interface ContactSettings {
+  whatsappNumber: string;
+  phoneNumber: string;
+  emailAddress: string;
+  address?: string;
+  facebook?: string;
+  twitter?: string;
+  instagram?: string;
+  linkedin?: string;
+  youtube?: string;
+}
+
+export interface WebsiteSettings {
+  websiteName: string;
+  logoUrl?: string;
+  websiteDescription: string;
+  announcement?: string;
+  footerInfo?: string;
 }
 
 export interface SystemSettings {
   applicationFee: number;
   whatsappNumber?: string;
+  phoneNumber?: string;
+  emailAddress?: string;
   jazzcash: PaymentMethodConfig;
   easypaisa: PaymentMethodConfig;
+  contactInfo?: ContactSettings;
+  websiteInfo?: WebsiteSettings;
   interviewPolicy?: string;
 }
 

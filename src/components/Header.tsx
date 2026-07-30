@@ -1,5 +1,6 @@
 import React from 'react';
 import { Briefcase, ShieldCheck, Search, UserCheck, Lock, Menu, X, User, LogOut, LayoutDashboard } from 'lucide-react';
+import { SystemSettings } from '../types';
 
 interface HeaderProps {
   onOpenApply: (positionName?: string) => void;
@@ -11,6 +12,7 @@ interface HeaderProps {
   onLogoutAdmin?: () => void;
   onSelectCampaign?: (slug: string) => void;
   activeCampaignSlug?: string;
+  config?: SystemSettings;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -22,9 +24,12 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAdminPanel,
   onLogoutAdmin,
   onSelectCampaign,
-  activeCampaignSlug
+  activeCampaignSlug,
+  config
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const announcementText = config?.websiteInfo?.announcement || 'Recruitment & Career Testing Services 2026';
+  const siteName = config?.websiteInfo?.websiteName || 'JobsHub';
 
   return (
     <header className="sticky top-0 z-40 bg-white border-b border-slate-200 shadow-2xs">
@@ -35,8 +40,8 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-600 text-white text-[10px] uppercase font-bold tracking-wider">
               Official Portal
             </span>
-            <span className="hidden sm:inline text-slate-200">Recruitment &amp; Career Testing Services 2026</span>
-            <span className="sm:hidden text-slate-200">Recruitment Portal 2026</span>
+            <span className="hidden sm:inline text-slate-200">{announcementText}</span>
+            <span className="sm:hidden text-slate-200 truncate max-w-[200px]">{announcementText}</span>
           </div>
           <div className="flex items-center gap-4 text-slate-300 text-xs">
             <span className="bg-slate-800 text-blue-300 px-3 py-0.5 rounded-full border border-slate-700 text-[11px] font-semibold">
@@ -59,13 +64,17 @@ export const Header: React.FC<HeaderProps> = ({
           onClick={() => onNavigateSection('hero')}
           className="flex items-center gap-2.5 cursor-pointer group"
         >
-          <div className="bg-blue-600 w-8 h-8 rounded flex items-center justify-center text-white shadow-sm group-hover:bg-blue-700 transition-colors">
-            <Briefcase className="w-4 h-4" />
-          </div>
+          {config?.websiteInfo?.logoUrl ? (
+            <img src={config.websiteInfo.logoUrl} alt={siteName} className="w-8 h-8 rounded object-cover shadow-sm" />
+          ) : (
+            <div className="bg-blue-600 w-8 h-8 rounded flex items-center justify-center text-white shadow-sm group-hover:bg-blue-700 transition-colors">
+              <Briefcase className="w-4 h-4" />
+            </div>
+          )}
           <div>
             <div className="flex items-center gap-1.5">
               <span className="text-xl font-bold tracking-tight text-blue-900 font-sans">
-                JobsHub<span className="font-normal text-blue-600">Official</span>
+                {siteName}<span className="font-normal text-blue-600">Official</span>
               </span>
               <ShieldCheck className="w-4 h-4 text-blue-600" aria-label="Verified Official Portal" />
             </div>
