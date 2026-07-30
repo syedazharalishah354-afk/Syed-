@@ -599,10 +599,27 @@ app.get('/api/admin/stats', authMiddleware, (_req: Request, res: Response) => {
   ).length;
 
   const total = apps.length;
-  const pending = apps.filter(a => a.status === 'Payment Verification Pending' || a.status === 'Payment Pending').length;
-  const approved = apps.filter(a => a.status === 'Payment Approved' || a.status === 'Submitted Successfully').length;
-  const rejected = apps.filter(a => a.status === 'Payment Rejected').length;
-  const submitted = apps.filter(a => a.status === 'Submitted Successfully').length;
+  const pending = apps.filter(a =>
+    a.status === 'Payment Verification Pending' ||
+    a.status === 'Payment Pending' ||
+    (a as any).paymentStatus === 'pending'
+  ).length;
+  const approved = apps.filter(a =>
+    a.status === 'Payment Approved' ||
+    a.status === 'Submitted Successfully' ||
+    a.status === 'Auto-Approved / Preliminary Approval' ||
+    a.status === 'Auto-Approved' ||
+    (a as any).paymentStatus === 'approved'
+  ).length;
+  const rejected = apps.filter(a =>
+    a.status === 'Payment Rejected' ||
+    a.status === 'Rejected' ||
+    (a as any).paymentStatus === 'rejected'
+  ).length;
+  const submitted = apps.filter(a =>
+    a.status === 'Submitted Successfully' ||
+    a.status === 'Auto-Approved / Preliminary Approval'
+  ).length;
 
   res.json({
     totalUsers,
@@ -655,17 +672,17 @@ app.get('/api/admin/applications', authMiddleware, (req: Request, res: Response)
     }
   }
 
-  if (search && typeof search === 'string') {
+  if (search && typeof search === 'string' && search.trim().length > 0) {
     const s = search.toLowerCase().trim();
     const cleanS = s.replace(/\D/g, '');
     list = list.filter(a =>
-      a.fullName.toLowerCase().includes(s) ||
-      a.fatherName.toLowerCase().includes(s) ||
-      a.referenceNo.toLowerCase().includes(s) ||
-      a.jobPosition.toLowerCase().includes(s) ||
-      a.email.toLowerCase().includes(s) ||
-      a.mobile.includes(s) ||
-      (cleanS.length > 3 && cleanCNIC(a.cnic).includes(cleanS))
+      (a.fullName || '').toLowerCase().includes(s) ||
+      (a.fatherName || '').toLowerCase().includes(s) ||
+      (a.referenceNo || '').toLowerCase().includes(s) ||
+      (a.jobPosition || '').toLowerCase().includes(s) ||
+      (a.email || '').toLowerCase().includes(s) ||
+      (a.mobile || '').includes(s) ||
+      (cleanS.length > 3 && cleanCNIC(a.cnic || '').includes(cleanS))
     );
   }
 

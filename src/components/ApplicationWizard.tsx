@@ -248,48 +248,8 @@ export const ApplicationWizard: React.FC<ApplicationWizardProps> = ({
       setTimeLeft(30);
       setWizardStage('processing');
     } catch (err: any) {
-      console.error('Submission error fallback:', err);
-      // Fallback local creation if network offline
-      const selectedJobObj = availableJobsList.find(j => j.title === jobPosition);
-      const fallbackApp: Application = {
-        id: `app-local-${Date.now()}`,
-        referenceNo: `JHO-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`,
-        fullName: fullName.trim() || 'Applicant',
-        fatherName: fatherName.trim() || 'Not Provided',
-        cnic: cnic.trim() || 'Not Provided',
-        dob: dob ? dob.trim() : '',
-        gender: gender || 'Male',
-        email: email.trim() || 'applicant@jobshub.official',
-        mobile: mobile.trim() || 'Not Provided',
-        whatsapp: whatsapp.trim() || mobile.trim() || 'Not Provided',
-        qualification: qualification || 'Matric',
-        experience: experience || 'Fresh',
-        skills: '',
-        address: address.trim() || 'Not Provided',
-        city: city.trim() || 'Not Specified',
-        postalCode: postalCode.trim() || '',
-        jobPosition: jobPosition || 'General Application',
-        jobCategory: selectedJobObj?.category || 'General',
-        jobId: selectedJobObj?.id || null,
-        cnicFrontUrl: cnicFrontPreview || 'Not Uploaded',
-        cnicBackUrl: cnicBackPreview || 'Not Uploaded',
-        passportPhotoUrl: passportPhotoPreview || 'Not Uploaded',
-        educationCertUrl: 'Not Uploaded',
-        experienceCertUrl: 'Not Uploaded',
-        resumeUrl: 'Not Uploaded',
-        otherDocUrl: 'Not Uploaded',
-        processingCompleted: true,
-        paymentScreenshotUrl: paymentScreenshotPreview || 'Not Uploaded',
-        paymentMethod: paymentMethod || 'JazzCash',
-        paymentTxnId: paymentTxnId.trim() || null,
-        status: 'Submitted Successfully',
-        rejectionReason: null,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      setSubmittedApp(fallbackApp);
-      setTimeLeft(30);
-      setWizardStage('processing');
+      console.error('Submission error:', err);
+      setFormErrors({ server: err.message || 'Failed to record application on server database. Please try again.' });
     } finally {
       setSubmitting(false);
     }

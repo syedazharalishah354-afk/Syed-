@@ -161,71 +161,23 @@ export async function submitApplicationStep1(payload: {
   paymentScreenshotUrl?: string | null;
   paymentTxnId?: string | null;
 }): Promise<{ message: string; application: Application }> {
-  try {
-    const res = await fetch('/api/applications/step1', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
+  const res = await fetch('/api/applications/step1', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
 
-    if (res.ok) {
-      const contentType = res.headers.get('content-type') || '';
-      if (contentType.includes('application/json')) {
-        const data = await res.json();
-        if (data && data.application) {
-          saveLocalApplication(data.application);
-          return data;
-        }
-      }
+  const contentType = res.headers.get('content-type') || '';
+  if (res.ok && contentType.includes('application/json')) {
+    const data = await res.json();
+    if (data && data.application) {
+      saveLocalApplication(data.application);
+      return data;
     }
-  } catch {
-    // Fallback to local submission
   }
 
-  const refNum = `JHO-2026-${Math.floor(100000 + Math.random() * 900000)}`;
-  const now = new Date().toISOString();
-  const localApp: Application = {
-    id: `app-${Date.now()}`,
-    referenceNo: refNum,
-    fullName: payload.fullName,
-    fatherName: payload.fatherName,
-    cnic: payload.cnic,
-    dob: payload.dob || '',
-    gender: payload.gender || 'Male',
-    email: payload.email,
-    mobile: payload.mobile,
-    whatsapp: payload.whatsapp || payload.mobile,
-    qualification: payload.qualification,
-    experience: payload.experience || 'Fresh',
-    skills: payload.skills || '',
-    address: payload.address,
-    city: payload.city || 'Not Specified',
-    postalCode: payload.postalCode || '',
-    jobPosition: payload.jobPosition,
-    jobCategory: payload.jobCategory || 'General',
-    jobId: payload.jobId || null,
-    cnicFrontUrl: payload.cnicFrontUrl,
-    cnicBackUrl: payload.cnicBackUrl,
-    passportPhotoUrl: payload.passportPhotoUrl || null,
-    educationCertUrl: payload.educationCertUrl || null,
-    experienceCertUrl: payload.experienceCertUrl || null,
-    resumeUrl: payload.resumeUrl || null,
-    otherDocUrl: payload.otherDocUrl || null,
-    processingCompleted: true,
-    paymentScreenshotUrl: payload.paymentScreenshotUrl || null,
-    paymentMethod: payload.paymentMethod || null,
-    paymentTxnId: payload.paymentTxnId || null,
-    status: 'Auto-Approved / Preliminary Approval',
-    rejectionReason: null,
-    createdAt: now,
-    updatedAt: now
-  };
-
-  saveLocalApplication(localApp);
-  return {
-    message: 'Application submitted successfully',
-    application: localApp
-  };
+  const errData = await res.json().catch(() => ({}));
+  throw new Error(errData.error || errData.message || `Server failed to record application (HTTP ${res.status})`);
 }
 
 export async function submitPaymentProof(
@@ -236,46 +188,23 @@ export async function submitPaymentProof(
     paymentTxnId?: string;
   }
 ): Promise<{ message: string; application: Application }> {
-  try {
-    const res = await fetch(`/api/applications/${applicationId}/payment`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
+  const res = await fetch(`/api/applications/${applicationId}/payment`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
 
-    if (res.ok) {
-      const contentType = res.headers.get('content-type') || '';
-      if (contentType.includes('application/json')) {
-        const data = await res.json();
-        if (data && data.application) {
-          saveLocalApplication(data.application);
-          return data;
-        }
-      }
+  const contentType = res.headers.get('content-type') || '';
+  if (res.ok && contentType.includes('application/json')) {
+    const data = await res.json();
+    if (data && data.application) {
+      saveLocalApplication(data.application);
+      return data;
     }
-  } catch {
-    // Fallback
   }
 
-  const localApps = getLocalApplications();
-  const existing = localApps.find(a => a.id === applicationId || a.referenceNo === applicationId);
-  if (existing) {
-    const updatedApp: Application = {
-      ...existing,
-      status: 'Payment Verification Pending',
-      paymentMethod: payload.paymentMethod,
-      paymentScreenshotUrl: payload.paymentScreenshotUrl,
-      paymentTxnId: payload.paymentTxnId || null,
-      updatedAt: new Date().toISOString()
-    };
-    saveLocalApplication(updatedApp);
-    return {
-      message: 'Payment details submitted successfully',
-      application: updatedApp
-    };
-  }
-
-  throw new Error('Application record not found');
+  const errData = await res.json().catch(() => ({}));
+  throw new Error(errData.error || errData.message || `Server failed to submit payment proof (HTTP ${res.status})`);
 }
 
 export async function trackApplication(query: string): Promise<Application[]> {
